@@ -1,0 +1,112 @@
+# load package
+if(!require("pacman")) install.packages("pacman")
+pacman::p_load(readr, ggplot2, dplyr, gridExtra)
+
+# read dataset
+file = "Data/confirmed_cases_worldwide.csv"
+confirmed_cases_worldwide = read_csv(file)
+
+# see result
+tibble(confirmed_cases_worldwide)
+
+# plot data
+ggplot(data = confirmed_cases_worldwide, aes(x = date, y = cum_cases)) +
+    geom_line() +
+    labs(title = "Confirmed cases throughout the world",
+         subtitle = Sys.Date(),
+         caption = "Fig.1",
+         x = "Date",
+         y = "Cumulative confirmed cases",
+         size = 5)
+
+# read dataset
+file = "Data/confirmed_cases_china_vs_world.csv"
+confirmed_cases_china_vs_world = read_csv(file)
+
+# see result
+glimpse(confirmed_cases_china_vs_world)
+
+# plot data
+p = ggplot(data = confirmed_cases_china_vs_world) +
+    geom_line(aes(x = date, y = cum_cases, group = is_china, col = is_china)) +
+    labs(title = "China compared to the rest of the world",
+         subtitle = Sys.Date(),
+         caption = "Fig.2",
+         x = "Date",
+         y = "Cumulative confirmed cases",
+         size = 5)
+# set notation
+who_events = tribble(
+    ~ date, ~ event,
+    "2020-01-30", "Global health\nEmergency declared",
+    "2020-03-11", "Pandemic\nDeclared",
+    "2020-02-13", "China reporting\nChange"
+) %>% mutate(date = as.Date(date))
+tibble(who_events)
+
+# plot data
+p + geom_vline(data = who_events, aes(xintercept = date), linetype = "dashed", col = "grey") +
+    geom_text(data = who_events, aes(x = date, label = event), y = 100000, size = 4)
+
+# filter data
+china_after_feb15 = confirmed_cases_china_vs_world %>%
+    filter(is_china == "China", date >= "2020-02-15")
+
+# plot data
+p.1 = ggplot(data = china_after_feb15, aes(x = date, y = cum_cases)) +
+      geom_line() +
+      geom_smooth(method = "lm", se = F) +
+      labs(title = "Adding a trend line to China",
+           subtitle = Sys.Date(),
+           caption = "Fig.3",
+           x = "Date",
+           y = "Cumulative confirmed cases",
+           size = 5)
+
+# filter data
+not_china = confirmed_cases_china_vs_world  %>% 
+    filter(is_china != "China")
+
+# plot data
+p.2 = ggplot(data = not_china, aes(x = date, y = cum_cases)) +
+      geom_line() +
+      geom_smooth(method = "lm", se = F) +
+      labs(title = "And the rest of the world",
+           subtitle = Sys.Date(),
+           caption = "Fig.4",
+           x = "Date",
+           y = "Cumulative confirmed cases",
+           size = 5)
+
+# transform log
+p.1 = p.1 + scale_y_log10()
+p.2 = p.2 + scale_y_log10()
+grid.arrange(p.1, p.2, nrow = 1)
+
+# read data
+file = "Data/confirmed_cases_by_country.csv"
+confirmed_cases_by_country = read_csv(file)
+
+# group data
+top_countries_by_total_cases = confirmed_cases_by_country %>%
+    group_by(country) %>%
+    summarize(total_cases = max(cum_cases)) %>%
+    top_n(7, total_cases)
+
+# see result
+top_countries_by_total_cases
+
+# read data
+file = "Data/confirmed_cases_top7_outside_china.csv"
+confirmed_cases_top7_outside_china = read_csv(file)
+
+# plot data
+ggplot(data = confirmed_cases_top7_outside_china, aes(x = date, y = cum_cases, group = country, col = country)) +
+    geom_line() +
+    labs(title = "Plotting hardest hit countries as of Mid-March 2020",
+         subtitle = Sys.Date(),
+         caption = "Fig.5",
+         x = "Date",
+         y = "Cumulative confirmed cases",
+         size = 5)
+
